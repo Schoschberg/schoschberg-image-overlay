@@ -3,10 +3,13 @@
   "name": "Image Overlay",
   "version": "1.0",
   "description": "Legt ein halbtransparentes Bild über jede Website.",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting","storage","tabs"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
