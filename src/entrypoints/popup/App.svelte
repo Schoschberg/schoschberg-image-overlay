@@ -1,75 +1,120 @@
 <script lang="ts">
   import svelteLogo from '../../assets/svelte.svg'
-  import Counter from '../../lib/Counter.svelte'
+  import './app.css'
 
-  let image = $state()
+  let overlayImageObject = $state(null);
 
+  // ✅ Initialen Wert laden
+  browser.storage.local.get("overlayImage").then((data) => {
+    overlayImageObject = data.overlayImage ?? null;
+  });
 
-  async function sendToBackground(event: InputEvent) {
+  // ✅ Reaktiv auf Änderungen im Storage hören
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.overlayImage) {
+      overlayImageObject = changes.overlayImage.newValue ?? null;
+    }
+  });
+
+  let horizontalShift = $state(0);
+
+  async function handleFileChange(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Datei als ArrayBuffer lesen
-    const arrayBuffer = await file.arrayBuffer();
-
-    // In Base64 umwandeln (da Storage kein reines Binary speichert)
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-
-    // Nachricht an Background senden
-    await browser.runtime.sendMessage({
-      type: "SAVE_FILE",
-      name: file.name,
-      data: base64,
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
 
-    console.log("Datei an Background gesendet!");
+    // Beispiel: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgA..."
+    await browser.storage.local.set({
+      overlayImage: { name: file.name, data: base64 },
+    });
+
+    console.log("Bild gespeichert!");
   }
 
   async function showImageOnWebsite() {
-    // Sagt dem Content Script, es soll das Overlay anzeigen
-    await browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-      browser.tabs.sendMessage(tabs[0].id!, { type: "SHOW_OVERLAY" });
-    });
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    try {
+      await browser.tabs.sendMessage(tab.id!, { type: "SHOW_OVERLAY", shift: horizontalShift });
+    } catch (err) {
+      console.error("Kein Content Script:", err);
+    }
   }
 
+  async function removeImageFromWebsite() {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    try {
+      await browser.tabs.sendMessage(tab.id!, { type: "HIDE_OVERLAY" });
+    } catch (err) {
+      console.error("Kein Content Script:", err);
+    }
+  }
 </script>
 
 <main>
-  <div>
-    <a href="https://wxt.dev" target="_blank" rel="noreferrer">
-      <img src="/wxt.svg" class="logo" alt="WXT Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
+  <h1 style="padding-bottom: 1rem">Finns <br/> Image Overlay</h1>
+  <div class="center">
+    {#if overlayImageObject != null}
+      <p>Aktuelles Image: {overlayImageObject.name}</p>
+      <img src={overlayImageObject.data} />
+    {/if}
   </div>
-  <h1>WXT + Svelte</h1>
+  <div  class="center">
+    <input type="file" accept="image/*" on:change={handleFileChange} />
+    <div class="horizontal">
+    <label for="horizontalShiftInput">Vertikale Verschiebung in rem</label>
+    <input id="horizontalShiftInput" type="number" bind:value={horizontalShift} >
+    </div>
 
-  <div class="card">
-
-    <input type="file" accept="image/*" onchange={sendToBackground} />
-    <button onclick={showImageOnWebsite}>Bild auf Website anzeigen</button>
+  <div class="horizontal">
+    <button on:click={showImageOnWebsite}>Show Image</button>
+    <button on:click={removeImageFromWebsite}>Remove image</button>
+  </div>
   </div>
 
-  <p class="read-the-docs">
-    Click on the WXT and Svelte logos to learn more
-  </p>
 </main>
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
+  .fileInput {
+    border: white 1px;
   }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #54bc4ae0);
+  img {
+    max-width: 10rem;
+    max-height: 10rem;
+    object-fit: cover;
+    width: 100%;
   }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
+  .center {
+    padding-top: 1rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
   }
-  .read-the-docs {
-    color: #888;
+  .horizontal {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: row;
+    gap: 1rem;
+  }
+  input {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: #1a1a1a;
+    cursor: pointer;
+    transition: border-color 0.25s;
   }
 </style>
