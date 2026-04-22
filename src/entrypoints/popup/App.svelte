@@ -72,28 +72,25 @@
   <div class="center">
     {#if overlayImageObject != null}
       <p>Aktuelles Image: {overlayImageObject.name}</p>
-      <img src={overlayImageObject.data} />
+      <img src={overlayImageObject.data} alt={overlayImageObject.name} />
     {/if}
   </div>
   <div  class="center">
-    <input type="file" accept="image/*" on:change={handleFileChange} />
+    <input type="file" accept="image/*" onchange={handleFileChange} />
     <div class="horizontal">
     <label for="horizontalShiftInput">Vertikale Verschiebung in rem</label>
     <input id="horizontalShiftInput" type="number" bind:value={horizontalShift} >
     </div>
 
   <div class="horizontal">
-    <button on:click={showImageOnWebsite}>Show Image</button>
-    <button on:click={removeImageFromWebsite}>Remove image</button>
+    <button onclick={showImageOnWebsite}>Show Image</button>
+    <button onclick={removeImageFromWebsite}>Remove image</button>
   </div>
   </div>
 
 </main>
 
 <style>
-  .fileInput {
-    border: white 1px;
-  }
   img {
     max-width: 10rem;
     max-height: 10rem;
