@@ -17,6 +17,17 @@
   });
 
   let horizontalShift = $state(0);
+  let shiftLoaded = $state(false);
+
+  browser.storage.local.get("verticalShift").then((data) => {
+    if (typeof data.verticalShift === "number") horizontalShift = data.verticalShift;
+    shiftLoaded = true;
+  });
+
+  $effect(() => {
+    if (!shiftLoaded) return;
+    browser.storage.local.set({ verticalShift: horizontalShift });
+  });
 
   async function handleFileChange(event) {
     const file = event.target.files[0];

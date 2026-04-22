@@ -15,6 +15,7 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@tsconfig/svelte": "^5.0.5",
     "@wxt-dev/module-svelte": "^2.0.3",
     "svelte": "^5.38.6",
