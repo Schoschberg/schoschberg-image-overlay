@@ -32,6 +32,10 @@ export default defineContentScript({
                 const existing = document.getElementById("wxt-overlay-image");
                 if (existing) existing.remove();
             }
+            if (message.type === "UPDATE_SHIFT") {
+                const existing = document.getElementById("wxt-overlay-image");
+                if (existing) existing.style.top = `${message.shift}rem`;
+            }
         });
 
     },
